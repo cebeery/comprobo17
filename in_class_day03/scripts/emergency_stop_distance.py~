@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+
+"""Go forward until hit wall and then reverse"""
+
+import rospy
+from geometry_msgs.msg import Twist, Vector3
+from sensor_msgs.msg import LaserScan
+
+class EmergencyStopNode(object):
+    
+    def __init__(self):
+        rospy.init_node('emergency_stop_distance')
+        rospy.Subscriber('/scan', LaserScan, self.processScan) 
+        self.pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+        self.rate = rospy.Rate(5)
+        self.cmd = Twist(linear = Vector3(x=0.0))
+        self.has_bumped = False
+        self.timeBumped = rospy.Time.now()
+       
+
+    def processScan(self,m):
+        print m.ranges[0]
+
+
+            #self.has_bumped = True
+            #self.cmd.linear.x = -0.5
+            #self.timeBumped = rospy.Time.now()
+            #print "Bumped"
+       
+
+    def run(self):
+        while not rospy.is_shutdown() and not (self.has_bumped and (rospy.Time.now() - self.timeBumped) > rospy.Duration(2.0)):
+            self.pub.publish(self.cmd)
+            self.rate.sleep()
+
+        #end
+        self.cmd = Twist()
+        self.pub.publish(self.cmd)
+        print 'Motion Ended'
+
+   
+scaredRobot = EmergencyStopNode()
+scaredRobot.run()
